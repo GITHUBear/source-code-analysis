@@ -46,6 +46,14 @@ ExecuteRemoteCompactionRequest 本方法就是在 doCompact 基础上处理了�
 
 可以发现 Remote Compaction 的实现很大程度上依赖于 zero copy clone 的性质，下面简单看看 DBCloud 是如何进行 CloneDB 的
 
+### 一些可能存在问题的结论
+
+- RocksDB Local Server 和 Compactor Server 是不需要配置在云上的（如果这个结论是对的，xp学长的设计目标是否需要做到 Local 节点上云？）
+
+- Remote Compaction 方式并没有取代默认的 auto compaction 方式，只不过 auto compaction 的底层文件读写更换为了 CloudEnv，Remote Compaction 是类似于 CompactFiles 的外部使用的接口，来满足较高写入负载时的压缩速度（或者说不需要 Remote Compaction 也可以运行）
+
+- 在 RocksDB-Cloud 中 SSTable 文件应该都保存在了云存储中，本地通过 Persistent Cache 在本地缓存从云存储中访问的数据
+
 ## CloneDB
 
 在 db_cloud_test.cc 当中为了便于测试实现了一个 CloneDB 方法
