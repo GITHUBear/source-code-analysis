@@ -53,11 +53,40 @@ RDMA 带来的高速通信情况下成为了性能瓶颈。 Octopus 带来了更
 
 ### Shared Persistent Memory Pool
 
+减小数据副本的拷贝
+
 - 移除层层堆叠的 fs 结构
 - 无需 page-cache 和用户 buf 通过 RDMA 技术进行数据访问
 - Octpus 直接管理 raw data format 无需文件系统的帮助
 
 ### Client-Active Data IO
+
+将服务器的数据传输压力通过 RDMA 技术转移到 client 上
+
+#### 流程
+
+i. client 以 RPC 的形式发送读写请求到 server 端
+
+ii.  返回文件 inode 地址等元数据信息
+
+iii. client 基于返回的元数据信息，发起 RDMA 读写请求
+
+``` plain
+ps: 文件访问的并发安全由 Server 和 client 一同来支持，
+    Server 负责加锁，通过 GCC 读写锁来实现每个文件的互斥访问
+    Client 负责解锁，通过 RDMA 原子原语实现解锁
+```
+
+#### 问题？？？
+
+Server 加锁而 Client 解锁的操作是否安全？
+
+Client 的崩溃是否会导致 Server 端的死锁？
+
+<font color=red>待阅读代码</font> 
+
+[Octopus](https://github.com/thustorage/octopus)
+
 
 ### Self-identified MetaData RPC
 
