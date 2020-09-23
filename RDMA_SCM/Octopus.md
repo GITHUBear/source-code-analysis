@@ -77,20 +77,64 @@ ps: 文件访问的并发安全由 Server 和 client 一同来支持，
     Client 负责解锁，通过 RDMA 原子原语实现解锁
 ```
 
-#### 问题？？？
+#### TODO
 
 Server 加锁而 Client 解锁的操作是否安全？
 
 Client 的崩溃是否会导致 Server 端的死锁？
 
-<font color=red>待阅读代码</font> 
-
-[Octopus](https://github.com/thustorage/octopus)
+待阅读代码 [Octopus](https://github.com/thustorage/octopus)
 
 
 ### Self-identified MetaData RPC
 
+#### Message-based RPC VS Memory-based RPC
+
+Message-based RPC
+
+优势：类似 socket 一次通信需要 Server 与 Client 之间的合作
+
+缺点：相对较高的时延与较低的吞吐率
+
+Memory-based RPC
+
+优势：低时延
+
+缺点：服务器端需要对消息缓冲区进行轮询，带来 CPU 的高开销
+
+#### Write_with_imm
+
+- 携带一个立即数，在 Octopus 中立即数由 Client 的 node_id 与接收缓冲区的 offset 组成
+- 会在接收端消耗一个 recv request 从而可以得到 send/recv 方式的快速响应
+
+#### TODO
+
+可能需要了解并且实际使用一下 RDMA 库
+
 ### Collection-Dispatch Txn
+
+传统的分布式事务技术是 2PC，需要依赖分布式日志以及日志持久化等
+
+Octopus 的优化方案是使用 RDMA 原子操作来实现一个新的分布式事务机制
+
+#### 崩溃一致性
+
+Octopus 选择 `不让 participator 持有日志副本`，
+仅在 Coordinator 保存 local log
+
+在 Collection 阶段发送 Collect RPC，从 participator 收集 WriteSet
+
+在 dispatch 阶段通过 RDMA write 对 participator 的数据进行更新，然后使用 RDMA 原语解除 
+participator 的 lock
+
+#### 并发控制
+
+与 `Client-Active Data IO` 部分所述类似
+
+#### TODO
+
+- 同样是 Coordinator 端来解除 participator 的 lock 是否合适的问题
+- 如果上面的问题确实存在，是否是本 DFS 牺牲了可用性 A，而来保证一致性、分区容忍？
 
 ### 后续优化点
 
