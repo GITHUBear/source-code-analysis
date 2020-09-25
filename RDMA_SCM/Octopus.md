@@ -135,6 +135,7 @@ participator 的 lock
 
 - 同样是 Coordinator 端来解除 participator 的 lock 是否合适的问题
 - 如果上面的问题确实存在，是否是本 DFS 牺牲了可用性 A，而来保证一致性、分区容忍？
+- RDMA 的写入的数据在持久化到 NVM 的时候是否保证崩溃原子性？
 
 ### 后续优化点
 
